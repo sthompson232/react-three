@@ -1,25 +1,29 @@
 import * as THREE from 'three'
-import React, { Suspense, useRef, useMemo } from 'react'
-import { useGLTF } from '@react-three/drei'
+import React, { Suspense, useRef } from 'react'
+import { useGLTF, OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Physics, usePlane, useBox, useCylinder } from '@react-three/cannon'
 import coin from './static/coin.glb'
 
 
 const dummy = new THREE.Object3D()
-const Coin = () => {
+const Coin = ({ number }) => {
     const geometry = useGLTF(coin)
 
 
       // Compute per-frame instance positions
       const ref = useRef()
       useFrame((state) => {
+        ref.current.rotation.y = Math.PI / 2
+        ref.current.position.x = 2.5
+        ref.current.position.y = 2
+        ref.current.position.z = 0
         const time = state.clock.getElapsedTime()
         let i = 0
         for (let x = 0; x < 10; x++)
           for (let y = 0; y < 10; y++)
             for (let z = 0; z < 10; z++) {
-              dummy.position.set(5 - x, 5 - y, 5 - z)
+              dummy.position.set((5 - x * 2), (5 - y * 2), (5 - z * 2))
               dummy.rotation.y = Math.sin(x / 4 + time) + Math.sin(y / 4 + time) + Math.sin(z / 4 + time)
               dummy.rotation.z = dummy.rotation.y * 2
               dummy.updateMatrix()
@@ -29,10 +33,18 @@ const Coin = () => {
       })
     return (
     <instancedMesh 
+        castShadow
+        receiveShadow
         ref={ref}
-        args={[geometry.scene.children[1].geometry, null, 100]}
+        args={[geometry.scene.children[1].geometry, null, number]}
+        scale={[0.1, 0.1, 0.1]}
     >
-        <meshNormalMaterial attach="material"/>
+        <meshPhongMaterial 
+          shininess={100}
+          roughness={0.5} 
+          metalness={0.5} 
+          attach="material" 
+          color="gold" />
     </instancedMesh>
     )
 }
@@ -76,20 +88,21 @@ function App() {
     return (
     <Canvas 
         camera={{ 
-            position: [0, 1, -10], fov: 40
+            position: [-5, 5, -5], 
+            fov: 40,
         }}
         shadows
         >
-        <ambientLight />
-        <pointLight position={[10, 10, 10]} />
+        <ambientLight intensity={0.1}/>
+        <pointLight position={[3, 10, 0]} />
+        <OrbitControls />
         <Suspense fallback={null}>
 
         <spotLight position={[5, 5, 5]} angle={0.3} penumbra={1} intensity={2} castShadow shadow-mapSize-width={256} shadow-mapSize-height={256} />
-        <Coin/>
         <Physics>
             <Plane rotation={[-Math.PI / 2, 0, 0]} />
-
-            {/* <Cubes number={200} /> */}
+            <Coin number={1000}/>
+            <Cubes number={200} />
         </Physics>
         </Suspense>
     </Canvas>
